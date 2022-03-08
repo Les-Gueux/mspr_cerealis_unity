@@ -72,3 +72,6 @@ crashlytics-build.properties
 /[Aa]ssets/[Ss]treamingAssets/aa/*
 Packages/com.ptc.vuforia.engine-10.5.5.tgz
 .DS_Store
+/Assets/XR
+/Assets/XR.meta
+.msprCerealisAndroid.apk
