@@ -9,6 +9,7 @@ using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using System.IO;
 
 public class ScanScript : MonoBehaviour
 {
@@ -28,14 +29,13 @@ public class ScanScript : MonoBehaviour
 
     public void PressSubmitButton ()
     {
-        httpRequestUnity(inputName.text, inputMail.text);
+        HttpRequestUnity(inputName.text, inputMail.text);
         inputName.text = "";
         inputMail.text = "";
-
-        Form.SetActive(false);
+        StartCoroutine(nameof(TakeScreenshotAndShare));
     }
 
-    private async void httpRequestUnity(string lastname, string email){
+    private async void HttpRequestUnity(string lastname, string email){
         using (var httpClient = new HttpClient())
         {
             using (var request = new HttpRequestMessage(new HttpMethod("POST"), "https://cerealis.with4.dolicloud.com/api/index.php/contacts"))
@@ -50,5 +50,30 @@ public class ScanScript : MonoBehaviour
                 Debug.Log(response);
             }
         }
+    }
+
+    public IEnumerator TakeScreenshotAndShare()
+    {
+        yield return new WaitForEndOfFrame();
+        Form.SetActive(false);
+
+        Texture2D ss = new Texture2D( Screen.width, Screen.height, TextureFormat.RGB24, false );
+        ss.ReadPixels( new Rect( 0, 0, Screen.width, Screen.height ), 0, 0 );
+        ss.Apply();
+
+        string filePath = Path.Combine( Application.temporaryCachePath, "shared img.png" );
+        File.WriteAllBytes( filePath, ss.EncodeToPNG() );
+
+        // To avoid memory leaks
+        Destroy( ss );
+
+        new NativeShare().AddFile( filePath )
+            .SetSubject( "" ).SetText( "" ).SetUrl( "" )
+            .SetCallback( ( result, shareTarget ) => Debug.Log( "Share result: " + result + ", selected app: " + shareTarget ) )
+            .Share();
+
+        // Share on WhatsApp only, if installed (Android only)
+        //if( NativeShare.TargetExists( "com.whatsapp" ) )
+        //	new NativeShare().AddFile( filePath ).AddTarget( "com.whatsapp" ).Share();
     }
 }
